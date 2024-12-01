@@ -1,0 +1,85 @@
+o diagrama sintático do compilador ficou assim:
+
+1. Relational Expression
+Definição: Uma expressão relacional é composta por outra Expression e operadores relacionais.
+Elementos:
+Expression (retorna ao início da expressão para avaliação).
+Operadores:
+== (igualdade).
+> (maior que).
+< (menor que).
+
+2. Expression
+Definição: Uma expressão aritmética que pode conter termos somados ou subtraídos.
+Elementos:
+TERM (termo que pode ser um fator multiplicado ou dividido).
+Operadores:
++ (adição).
+- (subtração).
+OR (ou lógico).
+
+3. Term
+Definição: Um termo é composto por fatores conectados por operadores multiplicativos.
+Elementos:
+FACTOR (elemento básico de cálculo).
+Operadores:
+* (multiplicação).
+/ (divisão).
+&& (e lógico).
+
+4. Factor
+Definição: O componente mais básico em uma expressão, podendo ser números, variáveis, strings ou expressões aninhadas.
+Elementos:
+Número.
+Identificador (id).
+String (str).
+Negação lógica (!).
+Operadores unários: +, -.
+Expressões aninhadas:
+Envolvidas entre parênteses: ( Relational Expression ).
+Função de leitura:
+scanf ( ).
+
+5. Block
+Definição: Um bloco é um conjunto de declarações delimitado por chaves {}.
+Elementos:
+Delimitadores:
+{ (início do bloco).
+} (fim do bloco).
+Statement: Cada bloco contém zero ou mais declarações.
+
+6. Program
+Definição: Representa o programa principal, que é composto por uma ou mais funções.
+Elementos:
+Function (função definida no programa).
+
+7. Function
+Definição: Uma função é composta por um tipo de retorno, um identificador, parâmetros opcionais e um bloco de código.
+Elementos:
+Tipo (type): Tipo de dado da função.
+Identificador (id): Nome da função.
+Parâmetros opcionais:
+Entre parênteses ( ), com tipos e identificadores.
+Bloco (Block): Corpo da função.
+
+8. Statement
+Definição: Representa uma instrução ou comando em um programa.
+Elementos:
+Declaração de variáveis:
+    Tipos suportados: int, str, bool.
+    Atribuição: id = Relational Expression.
+Atribuição a identificadores existentes: id = Relational Expression.
+Funções de saída: printf ( Relational Expression ).
+Blocos aninhados: { Block }.
+Estruturas de controle:
+if:
+    if ( Relational Expression ) Statement.
+    else: else Statement.
+while:
+    while ( Relational Expression ) Statement.
+Retorno de funções:
+    return Relational Expression.
+Finalização de instruções:
+    ; (ponto e vírgula como delimitador).
+
+Essa descrição cobre todos os elementos do diagrama, organizando-os por seções. Cada seção contém uma explicação clara de suas partes e conexões, garantindo que o o1-preview possa compreender completamente. Se precisar de ajustes ou mais detalhes em alguma parte, posso expandir.

@@ -1,0 +1,27 @@
+# Este é um programa de exemplo na nova linguagem
+
+a RECEBE 10;
+b RECEBE 20;
+
+resultado SOMA a MULTIPLICA b;
+
+IMPRIME "O resultado é: " SOMA resultado;
+
+# Loop enquanto
+contador RECEBE 1;
+ENQUANTO contador <= 5 FAÇA
+    IMPRIME "Contador: " SOMA contador;
+    contador SOMA 1;
+FIMENQUANTO
+
+# Loop para
+PARA i DE 1 ATÉ 5 FAÇA
+    IMPRIME "i = " SOMA i;
+FIMPARA
+
+# Condicional
+SE resultado > 100 ENTÃO
+    IMPRIME "Resultado é maior que 100";
+SENÃO
+    IMPRIME "Resultado é menor ou igual a 100";
+FIMSE

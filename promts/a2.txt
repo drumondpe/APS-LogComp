@@ -1,0 +1,27 @@
+Faça essa atividade que eu propus para mim mesmo
+
+Objetivos
+1. Criar uma Linguagem de Programação.
+2. A linguagem deve ter todas as estruturas básicas de uma linguagem de programação: variáveis, condicionais e loops. 
+
+-> pensei em fazer uma linguagem para iniciantes, entao acho que poderíamos deixar as coisas mais literias, tipo: a RECEBE 10, b RECEBE 20, a MULTIPLICA b. Acho que algo assim
+
+Descrição
+Este projeto envolve a criação de uma linguagem de programação personalizada, com o objetivo de consolidar  o conhecimento sobre a estrutura e o funcionamento interno de linguagens de programação.
+Sua linguagem pode ser desenhada para facilitar algum problema em específico ou então ser pensada como uma linguagem de programação que traz características interessantes: linguagem para programar máquinas de sorvete, linguagem para produção de música, linguagem cuja sintaxe é pensada para trazer paz e calma a quem programa, linguagem que faz um mix de outras linguagens… use a imaginação! 
+A linguagem deve ser capaz de executar operações básicas e possuir um conjunto de funcionalidades essenciais: - manipulação de variáveis; - estruturas de controle de fluxo (como condicionais e loops); -vamos adicionar for além do while ;- e a possibilidade de expansão para novas funcionalidades. Você deve especificar a sintaxe de sua linguagem com uma gramática formal em EBNF (Extended Backus-Naur Form) e documentar no README do repositório do projeto. 
+Além disso, é necessário fornecer exemplos práticos e casos de teste que demonstrem a capacidade da linguagem, bem como uma documentação clara para a execução de código na nova linguagem. 
+
+Tarefas:
+1. Estruturar a linguagem segundo o padrão EBNF.
+4. Criar um conjunto de testes que demonstre as características da sua Linguagem.
+5. Criar um vídeo de dois a cinco minutos apresentando sua linguagem (Motivação, Características,
+Curiosidades e Execução de exemplos). Colocar link no README. Na apresentação, deixar claro
+quais foram as modificações necessárias no compilador para adpatar adaptar a sua linguagem e novas características adicionadas. 
+
+Avaliação:
+• D: se não cumprir os requisitos 1 ou 4.
+• I: se não houver entrega ou se não for realizada a parte de interpretação ou se o código não executar.
+• Caso a linguagem seja uma mera tradução ou rearranjo gramatical da linguagem do compilador ou algum tutorial, haverá a perda de 1 conceito.
+
+Vamos focar em atingir o conceito C por enquanto (então devemos fazer o necessário para cobrir D e C que são as tarefas 1 4 e 5 (vamos ignorar a 5 por enquanto)).

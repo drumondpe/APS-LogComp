@@ -1,0 +1,65 @@
+<Programa>          ::= { <Comando> }
+
+<Comando>           ::= <DeclaracaoVariavel> | <DeclaracaoFuncao> | <Atribuicao> | <Operacao> | <Condicional> | <LoopEnquanto> | <LoopPara> | <Impressao> | <Leitura> | <Retorno> | <Comentario>
+
+<DeclaracaoVariavel>::= <Tipo> <Identificador> [ "RECEBE" <Expressao> ] ";"
+
+<DeclaracaoFuncao>  ::= <Tipo> <Identificador> "(" [ <ListaParametros> ] ")" <Bloco>
+
+<ListaParametros>   ::= <Parametro> { "," <Parametro> }
+
+<Parametro>         ::= <Tipo> <Identificador>
+
+<Tipo>              ::= "INT" | "STR" | "BOOL"
+
+<Atribuicao>        ::= <Identificador> "RECEBE" <Expressao> ";"
+
+<Operacao>          ::= <Identificador> <OperadorAritmetico> <Expressao> ";"
+
+<Condicional>       ::= "SE" <Condicao> "ENTAO" <Bloco> [ "SENÃO" <Bloco> ] "FIMSE"
+
+<LoopEnquanto>      ::= "ENQUANTO" <Condicao> "FAÇA" <Bloco> "FIMENQUANTO"
+
+<LoopPara>          ::= "PARA" <Identificador> "DE" <Expressao> "ATÉ" <Expressao> [ "PASSO" <Expressao> ] "FAÇA" <Bloco> "FIMPARA"
+
+<Impressao>         ::= "IMPRIME" <Expressao> ";"
+
+<Leitura>           ::= "LEIA" <Identificador> ";"
+
+<Retorno>           ::= "RETORNA" <Expressao> ";"
+
+<Bloco>             ::= "{" { <Comando> } "}"
+
+<Expressao>         ::= <Termo> { ("+" | "-") <Termo> }
+
+<Termo>             ::= <Fator> { ("*" | "/") <Fator> }
+
+<Fator>             ::= <Número> | <String> | <Identificador> | "(" <Expressao> ")" | <ChamadaFuncao> | <OperadorUnario> <Fator>
+
+<ChamadaFuncao>     ::= <Identificador> "(" [ <ListaArgumentos> ] ")"
+
+<ListaArgumentos>   ::= <Expressao> { "," <Expressao> }
+
+<Condicao>          ::= <Expressao> <OperadorRelacional> <Expressao>
+
+<OperadorRelacional>::= "IGUAL" | "DIFERENTE" | "MAIOR" | "MENOR" | "MAIORIGUAL" | "MENORIGUAL"
+
+<OperadorAritmetico>::= "SOMA" | "SUBTRAI" | "MULTIPLICA" | "DIVIDE"
+
+<OperadorUnario>    ::= "+" | "-" | "!"
+
+<Identificador>     ::= <Letra> { <Letra> | <Digito> | "_" }
+
+<Número>            ::= <Digito> { <Digito> }
+
+<String>            ::= '"' { <Caractere> } '"'
+
+<Comentario>        ::= "#" { <QualquerCaractereExcetoNovaLinha> } "\n"
+
+<Letra>             ::= "A" | ... | "Z" | "a" | ... | "z"
+
+<Digito>            ::= "0" | ... | "9"
+
+<QualquerCaractereExcetoNovaLinha> ::= qualquer caractere exceto "\n"
+
+<Caractere>         ::= qualquer caractere exceto '"'
