@@ -3,9 +3,9 @@ from token import Token
 
 RESERVED_WORDS = [
     'IMPRIME', 'LEIA', 'SE', 'SENÃO', 'ENTAO', 'ENQUANTO', 'PARA', 'DE', 'ATÉ', 'FAÇA',
-    'FIMSE', 'FIMENQUANTO', 'FIMPARA', 'RECEBE', 'SOMA', 'SUBTRAI', 'MULTIPLICA',
-    'DIVIDE', 'PASSO', 'RETORNA', 'INT', 'STR', 'BOOL', 'IGUAL', 'DIFERENTE',
-    'MAIOR', 'MENOR', 'MAIORIGUAL', 'MENORIGUAL'
+    'FIMSE', 'FIMENQUANTO', 'FIMPARA', 'RECEBE', 'PASSO', 'RETORNA', 'INT', 'STR', 'BOOL', 'IGUAL', 'DIFERENTE',
+    'MAIOR', 'MENOR', 'MAIORIGUAL', 'MENORIGUAL', 'FUNCAO'
+    # Removemos 'SOMA', 'SUBTRAI', 'MULTIPLICA', 'DIVIDE' daqui
 ]
 
 class Tokenizer:
@@ -62,14 +62,25 @@ class Tokenizer:
                 ident += self.source[self.position]
                 self.position += 1
             ident_upper = ident.upper()
-            if ident_upper in RESERVED_WORDS:
+            if ident_upper in ['SOMA', 'SUBTRAI', 'MULTIPLICA', 'DIVIDE']:
+                # Mapear operadores de palavra para símbolos
+                if ident_upper == 'SOMA':
+                    self.next = Token('SYMBOL', '+')
+                elif ident_upper == 'SUBTRAI':
+                    self.next = Token('SYMBOL', '-')
+                elif ident_upper == 'MULTIPLICA':
+                    self.next = Token('SYMBOL', '*')
+                elif ident_upper == 'DIVIDE':
+                    self.next = Token('SYMBOL', '/')
+                return
+            elif ident_upper in RESERVED_WORDS:
                 self.next = Token('RESERVED', ident_upper)
             else:
                 self.next = Token('IDENTIFIER', ident)
             return
 
         # Operadores e símbolos especiais
-        elif current_char in '+-*/();<>!':
+        elif current_char in '+-*/(),;<>!{}':
             self.next = Token('SYMBOL', current_char)
             self.position += 1
             return

@@ -42,7 +42,7 @@ class Parser:
                 Parser.advance()
                 true_block = Parser.parse_block()
                 false_block = None
-                if Parser.current_token.value == 'SENÃO':
+                if Parser.current_token.value == 'SENAO':
                     Parser.advance()
                     false_block = Parser.parse_block()
                 if Parser.current_token.value != 'FIMSE':
@@ -52,8 +52,8 @@ class Parser:
             elif Parser.current_token.value == 'ENQUANTO':
                 Parser.advance()
                 condition = Parser.parse_condition()
-                if Parser.current_token.value != 'FAÇA':
-                    raise Exception("Esperado 'FAÇA' após condição")
+                if Parser.current_token.value != 'FACA':
+                    raise Exception("Esperado 'FACA' após condição")
                 Parser.advance()
                 block = Parser.parse_block()
                 if Parser.current_token.value != 'FIMENQUANTO':
@@ -62,73 +62,97 @@ class Parser:
                 return WhileNode(condition, block)
             elif Parser.current_token.value == 'PARA':
                 Parser.advance()
+                if Parser.current_token.value not in ['INT', 'STR', 'BOOL']:
+                    raise Exception("Esperado tipo após 'PARA'")
+                var_type = Parser.current_token.value
+                Parser.advance()
                 if Parser.current_token.type != 'IDENTIFIER':
-                    raise Exception("Esperado identificador após 'PARA'")
+                    raise Exception("Esperado identificador após tipo em 'PARA'")
                 var_name = Parser.current_token.value
                 Parser.advance()
                 if Parser.current_token.value != 'DE':
                     raise Exception("Esperado 'DE' após identificador")
                 Parser.advance()
                 start_expr = Parser.parse_expression()
-                if Parser.current_token.value != 'ATÉ':
-                    raise Exception("Esperado 'ATÉ' após expressão inicial")
+                if Parser.current_token.value != 'ATE':
+                    raise Exception("Esperado 'ATE' após expressão inicial")
                 Parser.advance()
                 end_expr = Parser.parse_expression()
                 step_expr = None
                 if Parser.current_token.value == 'PASSO':
                     Parser.advance()
                     step_expr = Parser.parse_expression()
-                if Parser.current_token.value != 'FAÇA':
-                    raise Exception("Esperado 'FAÇA' para iniciar o bloco do 'PARA'")
+                if Parser.current_token.value != 'FACA':
+                    raise Exception("Esperado 'FACA' para iniciar o bloco do 'PARA'")
                 Parser.advance()
                 block = Parser.parse_block()
                 if Parser.current_token.value != 'FIMPARA':
                     raise Exception("Esperado 'FIMPARA' após bloco 'PARA'")
                 Parser.advance()
                 return ForNode(var_name, start_expr, end_expr, step_expr, block)
-            elif Parser.current_token.value in ['INT', 'STR', 'BOOL']:
-                var_type = Parser.current_token.value
+            elif Parser.current_token.value == 'FUNCAO':
+                Parser.advance()
+                if Parser.current_token.value not in ['INT', 'STR', 'BOOL']:
+                    raise Exception("Esperado tipo após 'FUNCAO'")
+                func_type = Parser.current_token.value
                 Parser.advance()
                 if Parser.current_token.type != 'IDENTIFIER':
-                    raise Exception("Esperado identificador após tipo")
-                var_name = Parser.current_token.value
+                    raise Exception("Esperado identificador após tipo na declaração de função")
+                func_name = Parser.current_token.value
                 Parser.advance()
-                if Parser.current_token.value == 'RECEBE':
-                    Parser.advance()
-                    expr = Parser.parse_expression()
-                    if Parser.current_token.value != ';':
-                        raise Exception("Esperado ';' após expressão")
-                    Parser.advance()
-                    return VarDecNode(var_type, var_name, expr)
-                elif Parser.current_token.value == '(':
-                    # Declaração de função
-                    Parser.advance()
-                    params = []
-                    if Parser.current_token.value != ')':
-                        while True:
-                            param_type = Parser.current_token.value
-                            if param_type not in ['INT', 'STR', 'BOOL']:
-                                raise Exception("Tipo de parâmetro inválido")
+                if Parser.current_token.value != '(':
+                    raise Exception("Esperado '(' após nome da função")
+                Parser.advance()
+                params = []
+                if Parser.current_token.value != ')':
+                    while True:
+                        param_type = Parser.current_token.value
+                        if param_type not in ['INT', 'STR', 'BOOL']:
+                            raise Exception("Tipo de parâmetro inválido")
+                        Parser.advance()
+                        if Parser.current_token.type != 'IDENTIFIER':
+                            raise Exception("Esperado identificador do parâmetro")
+                        param_name = Parser.current_token.value
+                        Parser.advance()
+                        params.append((param_type, param_name))
+                        if Parser.current_token.value == ',':
                             Parser.advance()
-                            if Parser.current_token.type != 'IDENTIFIER':
-                                raise Exception("Esperado identificador do parâmetro")
-                            param_name = Parser.current_token.value
-                            Parser.advance()
-                            params.append((param_type, param_name))
-                            if Parser.current_token.value == ',':
-                                Parser.advance()
-                            else:
-                                break
-                    if Parser.current_token.value != ')':
-                        raise Exception("Esperado ')' após parâmetros")
+                        else:
+                            break
+                if Parser.current_token.value != ')':
+                    raise Exception("Esperado ')' após parâmetros")
+                Parser.advance()
+                block = Parser.parse_block()
+                return FuncDecNode(func_type, func_name, params, block)
+            elif Parser.current_token.value in ['INT', 'STR', 'BOOL']:
+                # Declaração de variáveis (possivelmente múltiplas)
+                declarations = []
+                while True:
+                    var_type = Parser.current_token.value
                     Parser.advance()
-                    block = Parser.parse_block()
-                    return FuncDecNode(var_type, var_name, params, block)
-                elif Parser.current_token.value == ';':
+                    if Parser.current_token.type != 'IDENTIFIER':
+                        raise Exception("Esperado identificador após tipo")
+                    var_name = Parser.current_token.value
                     Parser.advance()
-                    return VarDecNode(var_type, var_name)
+                    expr = None
+                    if Parser.current_token.value == 'RECEBE':
+                        Parser.advance()
+                        expr = Parser.parse_expression()
+                    declarations.append(VarDecNode(var_type, var_name, expr))
+                    if Parser.current_token.value == ',':
+                        Parser.advance()
+                        if Parser.current_token.value not in ['INT', 'STR', 'BOOL']:
+                            raise Exception("Esperado tipo após ',' em declaração múltipla")
+                        continue
+                    elif Parser.current_token.value == ';':
+                        Parser.advance()
+                        break
+                    else:
+                        raise Exception("Esperado ',', 'RECEBE' ou ';' após declaração")
+                if len(declarations) == 1:
+                    return declarations[0]
                 else:
-                    raise Exception("Esperado ';', 'RECEBE' ou '(' após identificador")
+                    return BlockNode(declarations)
             elif Parser.current_token.value == 'RETORNA':
                 Parser.advance()
                 expr = Parser.parse_expression()
@@ -148,26 +172,6 @@ class Parser:
                     raise Exception("Esperado ';' após expressão")
                 Parser.advance()
                 return AssignmentNode(var_name, expr)
-            elif Parser.current_token.value in ['SOMA', 'SUBTRAI', 'MULTIPLICA', 'DIVIDE']:
-                op = Parser.current_token.value
-                Parser.advance()
-                expr = Parser.parse_expression()
-                if Parser.current_token.value != ';':
-                    raise Exception("Esperado ';' após expressão")
-                Parser.advance()
-                left = IdentifierNode(var_name)
-                right = expr
-                if op == 'SOMA':
-                    bin_op = BinOpNode(left, '+', right)
-                elif op == 'SUBTRAI':
-                    bin_op = BinOpNode(left, '-', right)
-                elif op == 'MULTIPLICA':
-                    bin_op = BinOpNode(left, '*', right)
-                elif op == 'DIVIDE':
-                    bin_op = BinOpNode(left, '/', right)
-                else:
-                    raise Exception(f"Operador desconhecido: {op}")
-                return AssignmentNode(var_name, bin_op)
             elif Parser.current_token.value == '(':
                 # Chamada de função
                 Parser.advance()
@@ -282,8 +286,8 @@ class Parser:
 
     @staticmethod
     def advance():
-        Parser.current_token = Parser.tokens.next
         Parser.tokens.select_next()
+        Parser.current_token = Parser.tokens.next
 
     @staticmethod
     def run(code):

@@ -2,9 +2,11 @@
 
 <Comando>           ::= <DeclaracaoVariavel> | <DeclaracaoFuncao> | <Atribuicao> | <Operacao> | <Condicional> | <LoopEnquanto> | <LoopPara> | <Impressao> | <Leitura> | <Retorno> | <Comentario>
 
-<DeclaracaoVariavel>::= <Tipo> <Identificador> [ "RECEBE" <Expressao> ] ";"
+<DeclaracaoVariavel> ::= <DeclaracaoUnica> { "," <DeclaracaoUnica> } ";"
 
-<DeclaracaoFuncao>  ::= <Tipo> <Identificador> "(" [ <ListaParametros> ] ")" <Bloco>
+<DeclaracaoUnica>    ::= <Tipo> <Identificador> [ "RECEBE" <Expressao> ]
+
+<DeclaracaoFuncao> ::= "FUNCAO" <Tipo> <Identificador> "(" [ <ListaParametros> ] ")" <Bloco>
 
 <ListaParametros>   ::= <Parametro> { "," <Parametro> }
 

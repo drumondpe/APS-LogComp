@@ -1,0 +1,749 @@
+Comecei a implementar o compilador e ele está assim:
+
+main.py:
+# main.py
+from parser import Parser
+from prepro import PrePro
+from symboltable import SymbolTable
+import sys
+
+def main():
+    if len(sys.argv) != 2:
+        sys.stderr.write("Uso: python main.py 'caminho_para_o_arquivo.txt'\n")
+        return
+
+    file_path = sys.argv[1]
+    try:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            code = file.read()
+
+        # Pré-processamento
+        filtered_code = PrePro.filter(code)
+
+        # Parsing
+        ast = Parser.run(filtered_code)
+
+        # Execução
+        symbol_table = SymbolTable()
+        ast.evaluate(symbol_table)
+
+    except FileNotFoundError:
+        sys.stderr.write("Erro: Arquivo não encontrado\n")
+    except Exception as e:
+        sys.stderr.write(f"Erro: {e}\n")
+
+if __name__ == "__main__":
+    main()
+
+
+node.py:
+# node.py
+from abc import ABC, abstractmethod
+from symboltable import SymbolTable
+
+class Node(ABC):
+    @abstractmethod
+    def evaluate(self, symbol_table):
+        pass
+
+class NumberNode(Node):
+    def __init__(self, value):
+        self.value = value
+
+    def evaluate(self, symbol_table):
+        return self.value
+
+class StringNode(Node):
+    def __init__(self, value):
+        self.value = value
+
+    def evaluate(self, symbol_table):
+        return self.value
+
+class BoolNode(Node):
+    def __init__(self, value):
+        self.value = value  # 1 para True, 0 para False
+
+    def evaluate(self, symbol_table):
+        return self.value
+
+class IdentifierNode(Node):
+    def __init__(self, name):
+        self.name = name
+
+    def evaluate(self, symbol_table):
+        var = symbol_table.get(self.name)
+        return var['value']
+
+class BinOpNode(Node):
+    def __init__(self, left, op, right):
+        self.left = left
+        self.op = op  # '+', '-', '*', '/'
+        self.right = right
+
+    def evaluate(self, symbol_table):
+        left_value = self.left.evaluate(symbol_table)
+        right_value = self.right.evaluate(symbol_table)
+
+        if self.op == '+':
+            return left_value + right_value
+        elif self.op == '-':
+            return left_value - right_value
+        elif self.op == '*':
+            return left_value * right_value
+        elif self.op == '/':
+            if right_value == 0:
+                raise Exception("Divisão por zero")
+            return left_value // right_value
+        else:
+            raise Exception(f"Operador desconhecido: {self.op}")
+
+class UnOpNode(Node):
+    def __init__(self, op, node):
+        self.op = op  # '+', '-', '!'
+        self.node = node
+
+    def evaluate(self, symbol_table):
+        value = self.node.evaluate(symbol_table)
+        if self.op == '+':
+            return +value
+        elif self.op == '-':
+            return -value
+        elif self.op == '!':
+            return int(not value)
+        else:
+            raise Exception(f"Operador unário desconhecido: {self.op}")
+
+class AssignmentNode(Node):
+    def __init__(self, name, expression):
+        self.name = name
+        self.expression = expression
+
+    def evaluate(self, symbol_table):
+        value = self.expression.evaluate(symbol_table)
+        symbol_table.set(self.name, value)
+        return value
+
+class VarDecNode(Node):
+    def __init__(self, var_type, name, expression=None):
+        self.var_type = var_type  # 'INT', 'STR', 'BOOL'
+        self.name = name
+        self.expression = expression
+
+    def evaluate(self, symbol_table):
+        if self.expression:
+            value = self.expression.evaluate(symbol_table)
+        else:
+            value = 0 if self.var_type == 'INT' else '' if self.var_type == 'STR' else 0
+        symbol_table.set(self.name, value, self.var_type)
+
+class PrintNode(Node):
+    def __init__(self, expression):
+        self.expression = expression
+
+    def evaluate(self, symbol_table):
+        value = self.expression.evaluate(symbol_table)
+        print(value)
+        return value
+
+class ReadNode(Node):
+    def __init__(self, name):
+        self.name = name
+
+    def evaluate(self, symbol_table):
+        value = input()
+        var_type = symbol_table.get(self.name)['type']
+        if var_type == 'INT':
+            value = int(value)
+        elif var_type == 'BOOL':
+            value = int(value)
+        symbol_table.set(self.name, value)
+        return value
+
+class IfNode(Node):
+    def __init__(self, condition, true_block, false_block=None):
+        self.condition = condition
+        self.true_block = true_block
+        self.false_block = false_block
+
+    def evaluate(self, symbol_table):
+        condition_value = self.condition.evaluate(symbol_table)
+        if condition_value:
+            return self.true_block.evaluate(symbol_table)
+        elif self.false_block:
+            return self.false_block.evaluate(symbol_table)
+
+class WhileNode(Node):
+    def __init__(self, condition, block):
+        self.condition = condition
+        self.block = block
+
+    def evaluate(self, symbol_table):
+        while self.condition.evaluate(symbol_table):
+            self.block.evaluate(symbol_table)
+
+class ForNode(Node):
+    def __init__(self, var_name, start_expr, end_expr, step_expr, block):
+        self.var_name = var_name
+        self.start_expr = start_expr
+        self.end_expr = end_expr
+        self.step_expr = step_expr
+        self.block = block
+
+    def evaluate(self, symbol_table):
+        start_value = self.start_expr.evaluate(symbol_table)
+        end_value = self.end_expr.evaluate(symbol_table)
+        if self.step_expr:
+            step_value = self.step_expr.evaluate(symbol_table)
+        else:
+            step_value = 1
+
+        symbol_table.set(self.var_name, start_value, 'INT')
+
+        if step_value > 0:
+            while symbol_table.get(self.var_name)['value'] <= end_value:
+                self.block.evaluate(symbol_table)
+                current_value = symbol_table.get(self.var_name)['value']
+                symbol_table.set(self.var_name, current_value + step_value)
+        else:
+            while symbol_table.get(self.var_name)['value'] >= end_value:
+                self.block.evaluate(symbol_table)
+                current_value = symbol_table.get(self.var_name)['value']
+                symbol_table.set(self.var_name, current_value + step_value)
+
+class BlockNode(Node):
+    def __init__(self, statements):
+        self.statements = statements
+
+    def evaluate(self, symbol_table):
+        for statement in self.statements:
+            result = statement.evaluate(symbol_table)
+            if isinstance(result, ReturnNode):
+                return result
+        return result
+
+class RelationalOpNode(Node):
+    def __init__(self, left, op, right):
+        self.left = left
+        self.op = op  # 'IGUAL', 'DIFERENTE', 'MAIOR', etc.
+        self.right = right
+
+    def evaluate(self, symbol_table):
+        left_value = self.left.evaluate(symbol_table)
+        right_value = self.right.evaluate(symbol_table)
+
+        if self.op == 'IGUAL':
+            return int(left_value == right_value)
+        elif self.op == 'DIFERENTE':
+            return int(left_value != right_value)
+        elif self.op == 'MAIOR':
+            return int(left_value > right_value)
+        elif self.op == 'MENOR':
+            return int(left_value < right_value)
+        elif self.op == 'MAIORIGUAL':
+            return int(left_value >= right_value)
+        elif self.op == 'MENORIGUAL':
+            return int(left_value <= right_value)
+        else:
+            raise Exception(f"Operador relacional desconhecido: {self.op}")
+
+class FuncDecNode(Node):
+    def __init__(self, func_type, name, params, block):
+        self.func_type = func_type
+        self.name = name
+        self.params = params  # Lista de tuplas (tipo, nome)
+        self.block = block
+
+    def evaluate(self, symbol_table):
+        symbol_table.set(self.name, self, 'FUNCTION')
+
+class FuncCallNode(Node):
+    def __init__(self, name, args):
+        self.name = name
+        self.args = args  # Lista de expressões
+
+    def evaluate(self, symbol_table):
+        func_dec = symbol_table.get(self.name)
+        if func_dec['type'] != 'FUNCTION':
+            raise Exception(f"'{self.name}' não é uma função")
+        func_node = func_dec['value']
+        if len(self.args) != len(func_node.params):
+            raise Exception(f"Quantidade de argumentos incorreta para a função '{self.name}'")
+        local_table = SymbolTable(parent=symbol_table)
+        for (param_type, param_name), arg_expr in zip(func_node.params, self.args):
+            arg_value = arg_expr.evaluate(symbol_table)
+            local_table.set(param_name, arg_value, param_type)
+        result = func_node.block.evaluate(local_table)
+        if isinstance(result, ReturnNode):
+            return result.evaluate(local_table)
+        else:
+            return None
+
+class ReturnNode(Node):
+    def __init__(self, expression):
+        self.expression = expression
+
+    def evaluate(self, symbol_table):
+        return self.expression.evaluate(symbol_table)
+
+
+parser.py:
+# parser.py
+from tokenizer import Tokenizer
+from node import *
+from symboltable import SymbolTable
+
+class Parser:
+    tokens = None
+    current_token = None
+
+    @staticmethod
+    def parse_program():
+        statements = []
+        while Parser.current_token.type != 'EOF':
+            statements.append(Parser.parse_command())
+        return BlockNode(statements)
+
+    @staticmethod
+    def parse_command():
+        if Parser.current_token.type == 'RESERVED':
+            if Parser.current_token.value == 'IMPRIME':
+                Parser.advance()
+                expr = Parser.parse_expression()
+                if Parser.current_token.value != ';':
+                    raise Exception("Esperado ';' após expressão")
+                Parser.advance()
+                return PrintNode(expr)
+            elif Parser.current_token.value == 'LEIA':
+                Parser.advance()
+                if Parser.current_token.type != 'IDENTIFIER':
+                    raise Exception("Esperado identificador após 'LEIA'")
+                var_name = Parser.current_token.value
+                Parser.advance()
+                if Parser.current_token.value != ';':
+                    raise Exception("Esperado ';' após identificador")
+                Parser.advance()
+                return ReadNode(var_name)
+            elif Parser.current_token.value == 'SE':
+                Parser.advance()
+                condition = Parser.parse_condition()
+                if Parser.current_token.value != 'ENTAO':
+                    raise Exception("Esperado 'ENTAO' após condição")
+                Parser.advance()
+                true_block = Parser.parse_block()
+                false_block = None
+                if Parser.current_token.value == 'SENÃO':
+                    Parser.advance()
+                    false_block = Parser.parse_block()
+                if Parser.current_token.value != 'FIMSE':
+                    raise Exception("Esperado 'FIMSE' após bloco 'SE'")
+                Parser.advance()
+                return IfNode(condition, true_block, false_block)
+            elif Parser.current_token.value == 'ENQUANTO':
+                Parser.advance()
+                condition = Parser.parse_condition()
+                if Parser.current_token.value != 'FAÇA':
+                    raise Exception("Esperado 'FAÇA' após condição")
+                Parser.advance()
+                block = Parser.parse_block()
+                if Parser.current_token.value != 'FIMENQUANTO':
+                    raise Exception("Esperado 'FIMENQUANTO' após bloco 'ENQUANTO'")
+                Parser.advance()
+                return WhileNode(condition, block)
+            elif Parser.current_token.value == 'PARA':
+                Parser.advance()
+                if Parser.current_token.value not in ['INT', 'STR', 'BOOL']:
+                    raise Exception("Esperado tipo após 'PARA'")
+                var_type = Parser.current_token.value
+                Parser.advance()
+                if Parser.current_token.type != 'IDENTIFIER':
+                    raise Exception("Esperado identificador após tipo em 'PARA'")
+                var_name = Parser.current_token.value
+                Parser.advance()
+                if Parser.current_token.value != 'DE':
+                    raise Exception("Esperado 'DE' após identificador")
+                Parser.advance()
+                start_expr = Parser.parse_expression()
+                if Parser.current_token.value != 'ATÉ':
+                    raise Exception("Esperado 'ATÉ' após expressão inicial")
+                Parser.advance()
+                end_expr = Parser.parse_expression()
+                step_expr = None
+                if Parser.current_token.value == 'PASSO':
+                    Parser.advance()
+                    step_expr = Parser.parse_expression()
+                if Parser.current_token.value != 'FAÇA':
+                    raise Exception("Esperado 'FAÇA' para iniciar o bloco do 'PARA'")
+                Parser.advance()
+                block = Parser.parse_block()
+                if Parser.current_token.value != 'FIMPARA':
+                    raise Exception("Esperado 'FIMPARA' após bloco 'PARA'")
+                Parser.advance()
+                return ForNode(var_name, start_expr, end_expr, step_expr, block)
+            elif Parser.current_token.value == 'FUNCAO':
+                Parser.advance()
+                if Parser.current_token.value not in ['INT', 'STR', 'BOOL']:
+                    raise Exception("Esperado tipo após 'FUNCAO'")
+                func_type = Parser.current_token.value
+                Parser.advance()
+                if Parser.current_token.type != 'IDENTIFIER':
+                    raise Exception("Esperado identificador após tipo na declaração de função")
+                func_name = Parser.current_token.value
+                Parser.advance()
+                if Parser.current_token.value != '(':
+                    raise Exception("Esperado '(' após nome da função")
+                Parser.advance()
+                params = []
+                if Parser.current_token.value != ')':
+                    while True:
+                        param_type = Parser.current_token.value
+                        if param_type not in ['INT', 'STR', 'BOOL']:
+                            raise Exception("Tipo de parâmetro inválido")
+                        Parser.advance()
+                        if Parser.current_token.type != 'IDENTIFIER':
+                            raise Exception("Esperado identificador do parâmetro")
+                        param_name = Parser.current_token.value
+                        Parser.advance()
+                        params.append((param_type, param_name))
+                        if Parser.current_token.value == ',':
+                            Parser.advance()
+                        else:
+                            break
+                if Parser.current_token.value != ')':
+                    raise Exception("Esperado ')' após parâmetros")
+                Parser.advance()
+                block = Parser.parse_block()
+                return FuncDecNode(func_type, func_name, params, block)
+            elif Parser.current_token.value in ['INT', 'STR', 'BOOL']:
+                # Declaração de variáveis (possivelmente múltiplas)
+                declarations = []
+                while True:
+                    var_type = Parser.current_token.value
+                    Parser.advance()
+                    if Parser.current_token.type != 'IDENTIFIER':
+                        raise Exception("Esperado identificador após tipo")
+                    var_name = Parser.current_token.value
+                    Parser.advance()
+                    expr = None
+                    if Parser.current_token.value == 'RECEBE':
+                        Parser.advance()
+                        expr = Parser.parse_expression()
+                    declarations.append(VarDecNode(var_type, var_name, expr))
+                    if Parser.current_token.value == ',':
+                        Parser.advance()
+                        if Parser.current_token.value not in ['INT', 'STR', 'BOOL']:
+                            raise Exception("Esperado tipo após ',' em declaração múltipla")
+                        continue
+                    elif Parser.current_token.value == ';':
+                        Parser.advance()
+                        break
+                    else:
+                        raise Exception("Esperado ',', 'RECEBE' ou ';' após declaração")
+                if len(declarations) == 1:
+                    return declarations[0]
+                else:
+                    return BlockNode(declarations)
+            elif Parser.current_token.value == 'RETORNA':
+                Parser.advance()
+                expr = Parser.parse_expression()
+                if Parser.current_token.value != ';':
+                    raise Exception("Esperado ';' após expressão")
+                Parser.advance()
+                return ReturnNode(expr)
+            else:
+                raise Exception(f"Comando desconhecido: {Parser.current_token.value}")
+        elif Parser.current_token.type == 'IDENTIFIER':
+            var_name = Parser.current_token.value
+            Parser.advance()
+            if Parser.current_token.value == 'RECEBE':
+                Parser.advance()
+                expr = Parser.parse_expression()
+                if Parser.current_token.value != ';':
+                    raise Exception("Esperado ';' após expressão")
+                Parser.advance()
+                return AssignmentNode(var_name, expr)
+            elif Parser.current_token.value in ['SOMA', 'SUBTRAI', 'MULTIPLICA', 'DIVIDE']:
+                op = Parser.current_token.value
+                Parser.advance()
+                expr = Parser.parse_expression()
+                if Parser.current_token.value != ';':
+                    raise Exception("Esperado ';' após expressão")
+                Parser.advance()
+                left = IdentifierNode(var_name)
+                right = expr
+                if op == 'SOMA':
+                    bin_op = BinOpNode(left, '+', right)
+                elif op == 'SUBTRAI':
+                    bin_op = BinOpNode(left, '-', right)
+                elif op == 'MULTIPLICA':
+                    bin_op = BinOpNode(left, '*', right)
+                elif op == 'DIVIDE':
+                    bin_op = BinOpNode(left, '/', right)
+                else:
+                    raise Exception(f"Operador desconhecido: {op}")
+                return AssignmentNode(var_name, bin_op)
+            elif Parser.current_token.value == '(':
+                # Chamada de função
+                Parser.advance()
+                args = []
+                if Parser.current_token.value != ')':
+                    while True:
+                        arg_expr = Parser.parse_expression()
+                        args.append(arg_expr)
+                        if Parser.current_token.value == ',':
+                            Parser.advance()
+                        else:
+                            break
+                if Parser.current_token.value != ')':
+                    raise Exception("Esperado ')' após argumentos")
+                Parser.advance()
+                if Parser.current_token.value != ';':
+                    raise Exception("Esperado ';' após chamada de função")
+                Parser.advance()
+                return FuncCallNode(var_name, args)
+            else:
+                raise Exception(f"Comando desconhecido após identificador: {Parser.current_token.value}")
+        else:
+            raise Exception(f"Comando inválido: {Parser.current_token}")
+
+    @staticmethod
+    def parse_block():
+        if Parser.current_token.value != '{':
+            raise Exception("Esperado '{' para iniciar o bloco")
+        Parser.advance()
+        statements = []
+        while Parser.current_token.value != '}':
+            statements.append(Parser.parse_command())
+        Parser.advance()
+        return BlockNode(statements)
+
+    @staticmethod
+    def parse_expression():
+        node = Parser.parse_term()
+        while Parser.current_token.value in ['+', '-']:
+            op = Parser.current_token.value
+            Parser.advance()
+            right = Parser.parse_term()
+            node = BinOpNode(node, op, right)
+        return node
+
+    @staticmethod
+    def parse_term():
+        node = Parser.parse_factor()
+        while Parser.current_token.value in ['*', '/']:
+            op = Parser.current_token.value
+            Parser.advance()
+            right = Parser.parse_factor()
+            node = BinOpNode(node, op, right)
+        return node
+
+    @staticmethod
+    def parse_factor():
+        if Parser.current_token.type == 'NUMBER':
+            node = NumberNode(Parser.current_token.value)
+            Parser.advance()
+            return node
+        elif Parser.current_token.type == 'STRING':
+            node = StringNode(Parser.current_token.value)
+            Parser.advance()
+            return node
+        elif Parser.current_token.type == 'IDENTIFIER':
+            var_name = Parser.current_token.value
+            Parser.advance()
+            if Parser.current_token.value == '(':
+                # Chamada de função
+                Parser.advance()
+                args = []
+                if Parser.current_token.value != ')':
+                    while True:
+                        arg_expr = Parser.parse_expression()
+                        args.append(arg_expr)
+                        if Parser.current_token.value == ',':
+                            Parser.advance()
+                        else:
+                            break
+                if Parser.current_token.value != ')':
+                    raise Exception("Esperado ')' após argumentos")
+                Parser.advance()
+                return FuncCallNode(var_name, args)
+            else:
+                return IdentifierNode(var_name)
+        elif Parser.current_token.value == '(':
+            Parser.advance()
+            node = Parser.parse_expression()
+            if Parser.current_token.value != ')':
+                raise Exception("Esperado ')'")
+            Parser.advance()
+            return node
+        elif Parser.current_token.value in ['+', '-', '!']:
+            op = Parser.current_token.value
+            Parser.advance()
+            node = UnOpNode(op, Parser.parse_factor())
+            return node
+        else:
+            raise Exception(f"Fator inválido: {Parser.current_token}")
+
+    @staticmethod
+    def parse_condition():
+        left = Parser.parse_expression()
+        if Parser.current_token.value in ['IGUAL', 'DIFERENTE', 'MAIOR', 'MENOR', 'MAIORIGUAL', 'MENORIGUAL']:
+            op = Parser.current_token.value
+            Parser.advance()
+            right = Parser.parse_expression()
+            return RelationalOpNode(left, op, right)
+        else:
+            raise Exception(f"Operador relacional esperado, encontrado: {Parser.current_token.value}")
+
+    @staticmethod
+    def advance():
+        Parser.tokens.select_next()
+        Parser.current_token = Parser.tokens.next
+
+    @staticmethod
+    def run(code):
+        Parser.tokens = Tokenizer(code)
+        Parser.current_token = Parser.tokens.next
+        root = Parser.parse_program()
+        if Parser.current_token.type != 'EOF':
+            raise Exception("Código após o final do programa")
+        return root
+
+
+prepro.py:
+# prepro.py
+import re
+
+class PrePro:
+    @staticmethod
+    def filter(code):
+        # Remove comentários iniciados por #
+        code = re.sub(r'#.*', '', code)
+        # Remove espaços extras
+        code = re.sub(r'\s+', ' ', code)
+        return code.strip()
+
+
+symboltable.py:
+# symboltable.py
+class SymbolTable:
+    def __init__(self, parent=None):
+        self.table = {}
+        self.parent = parent  # Referência à tabela pai
+
+    def get(self, name):
+        if name in self.table:
+            return self.table[name]
+        elif self.parent:
+            return self.parent.get(name)
+        else:
+            raise Exception(f"Variável '{name}' não definida")
+
+    def set(self, name, value, var_type=None):
+        if var_type:
+            self.table[name] = {'value': value, 'type': var_type}
+        else:
+            if name in self.table:
+                self.table[name]['value'] = value
+            else:
+                raise Exception(f"Variável '{name}' não declarada")
+
+token.py:
+# token.py
+class Token:
+    def __init__(self, type_, value):
+        self.type = type_
+        self.value = value
+
+    def __repr__(self):
+        return f"Token({self.type}, {self.value})"
+
+tokenizer.py:
+# tokenizer.py
+from token import Token
+
+RESERVED_WORDS = [
+    'IMPRIME', 'LEIA', 'SE', 'SENÃO', 'ENTAO', 'ENQUANTO', 'PARA', 'DE', 'ATÉ', 'FAÇA',
+    'FIMSE', 'FIMENQUANTO', 'FIMPARA', 'RECEBE', 'PASSO', 'RETORNA', 'INT', 'STR', 'BOOL', 'IGUAL', 'DIFERENTE',
+    'MAIOR', 'MENOR', 'MAIORIGUAL', 'MENORIGUAL', 'FUNCAO'
+    # Removemos 'SOMA', 'SUBTRAI', 'MULTIPLICA', 'DIVIDE' daqui
+]
+
+class Tokenizer:
+    def __init__(self, source):
+        self.source = source.strip()
+        self.position = 0
+        self.next = None
+        self.select_next()
+
+    def select_next(self):
+        while self.position < len(self.source) and self.source[self.position].isspace():
+            self.position += 1
+
+        if self.position >= len(self.source):
+            self.next = Token('EOF', None)
+            return
+
+        current_char = self.source[self.position]
+
+        # Comentários
+        if current_char == '#':
+            while self.position < len(self.source) and self.source[self.position] != '\n':
+                self.position += 1
+            self.select_next()
+            return
+
+        # Números
+        elif current_char.isdigit():
+            num = ''
+            while self.position < len(self.source) and self.source[self.position].isdigit():
+                num += self.source[self.position]
+                self.position += 1
+            self.next = Token('NUMBER', int(num))
+            return
+
+        # Strings
+        elif current_char == '"':
+            self.position += 1  # Consumir a aspa inicial
+            string_value = ''
+            while self.position < len(self.source) and self.source[self.position] != '"':
+                string_value += self.source[self.position]
+                self.position += 1
+            if self.position >= len(self.source):
+                raise Exception("String não terminada")
+            self.position += 1  # Consumir a aspa final
+            self.next = Token('STRING', string_value)
+            return
+
+        # Identificadores e palavras reservadas
+        elif current_char.isalpha() or current_char == '_':
+            ident = ''
+            while (self.position < len(self.source) and
+                   (self.source[self.position].isalnum() or self.source[self.position] == '_')):
+                ident += self.source[self.position]
+                self.position += 1
+            ident_upper = ident.upper()
+            if ident_upper in ['SOMA', 'SUBTRAI', 'MULTIPLICA', 'DIVIDE']:
+                # Mapear operadores de palavra para símbolos
+                if ident_upper == 'SOMA':
+                    self.next = Token('SYMBOL', '+')
+                elif ident_upper == 'SUBTRAI':
+                    self.next = Token('SYMBOL', '-')
+                elif ident_upper == 'MULTIPLICA':
+                    self.next = Token('SYMBOL', '*')
+                elif ident_upper == 'DIVIDE':
+                    self.next = Token('SYMBOL', '/')
+                return
+            elif ident_upper in RESERVED_WORDS:
+                self.next = Token('RESERVED', ident_upper)
+            else:
+                self.next = Token('IDENTIFIER', ident)
+            return
+
+        # Operadores e símbolos especiais
+        elif current_char in '+-*/(),;<>!{}':
+            self.next = Token('SYMBOL', current_char)
+            self.position += 1
+            return
+
+        else:
+            raise Exception(f"Caractere inesperado: {current_char}")

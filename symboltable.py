@@ -2,21 +2,15 @@
 class SymbolTable:
     def __init__(self, parent=None):
         self.table = {}
-        self.parent = parent  # Referência à tabela pai
+        self.parent = parent
+
+    def set(self, name, value, var_type=None):
+        self.table[name] = {'value': value, 'type': var_type}
 
     def get(self, name):
         if name in self.table:
             return self.table[name]
-        elif self.parent:
+        elif self.parent is not None:
             return self.parent.get(name)
         else:
-            raise Exception(f"Variável '{name}' não definida")
-
-    def set(self, name, value, var_type=None):
-        if var_type:
-            self.table[name] = {'value': value, 'type': var_type}
-        else:
-            if name in self.table:
-                self.table[name]['value'] = value
-            else:
-                raise Exception(f"Variável '{name}' não declarada")
+            return None

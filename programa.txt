@@ -1,27 +1,33 @@
-# Este é um programa de exemplo na nova linguagem
+# Exemplo de programa na nova linguagem com tipos e funções
 
-a RECEBE 10;
-b RECEBE 20;
+INT a RECEBE 10, INT b RECEBE 20, INT resultado;
 
-resultado SOMA a MULTIPLICA b;
+FUNCAO INT somar(INT x, INT y) {
+    RETORNA x + y;
+}
 
-IMPRIME "O resultado é: " SOMA resultado;
+resultado RECEBE somar(a, b);
+
+IMPRIME "O resultado da soma é: " + resultado;
 
 # Loop enquanto
-contador RECEBE 1;
-ENQUANTO contador <= 5 FAÇA
-    IMPRIME "Contador: " SOMA contador;
-    contador SOMA 1;
+INT contador RECEBE 1;
+ENQUANTO contador MENORIGUAL 5 FACA {
+    IMPRIME "Contador: " + contador;
+    contador RECEBE contador + 1;
+}
 FIMENQUANTO
 
 # Loop para
-PARA i DE 1 ATÉ 5 FAÇA
-    IMPRIME "i = " SOMA i;
+PARA INT i DE 1 ATE 5 FACA {
+    IMPRIME "i = " + i;
+}
 FIMPARA
 
 # Condicional
-SE resultado > 100 ENTÃO
+SE resultado MAIOR 100 ENTAO {
     IMPRIME "Resultado é maior que 100";
-SENÃO
+} SENAO {
     IMPRIME "Resultado é menor ou igual a 100";
+}
 FIMSE
